@@ -1,0 +1,12 @@
+.header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 55px;
+  background: rgb(42, 163, 73);
+}
+
+.header > h2 {
+  text-transform: capitalize;
+  color: white;
+}
