@@ -56,4 +56,4 @@ it is project to preview the book in 3 splitting categories : ( currentlyReading
 
 ## Authors
 
-- **Ahmed shehata** - _who built the application_ - [PurpleBooth](https://github.com/ahmedshehata98)
+- **Ahmed shehata** - developer who built the application- [Ahmed Shehata](https://github.com/ahmedshehata98)
