@@ -10,8 +10,6 @@ it is project to preview the book in 3 splitting categories : ( currentlyReading
 
 #### Prerequisites :
 
-###### you need thous tools to get started
-
 - NPM
 - VS Code
 - Node js
@@ -40,7 +38,7 @@ it is project to preview the book in 3 splitting categories : ( currentlyReading
  npm run start
 ```
 
-- start build production build
+- start build production files
 
 ```
  npm run build
@@ -48,7 +46,7 @@ it is project to preview the book in 3 splitting categories : ( currentlyReading
 
 ---
 
-### build with
+### Build by
 
 ---
 
