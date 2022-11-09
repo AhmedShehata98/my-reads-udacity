@@ -1,7 +1,8 @@
 ## My Reads [ Books tracking app]
 
-<hr/>
-##### it is project to preview the book in 3 splitting categories : ( currentlyReading - read - wantToRead)
+it is project to preview the book in 3 splitting categories : ( currentlyReading - read - wantToRead)
+
+---
 
 ## Getting Started
 
