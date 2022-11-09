@@ -10,9 +10,6 @@ const Home = ({ booksList, setBooksList, isPending, error }) => {
   const [readBooks, setReadBooks] = useState([]);
   const [wantToreadBooks, setWantToReadBooks] = useState([]);
   const [currentlyReadingBooks, setCurrentlyReadingBooks] = useState([]);
-  // const readBooks = useRef([]);
-  // const wantToreadBooks = useRef([]);
-  // const currentlyReadingBooks = useRef([]);
 
   const handleBooksShelfList = (booksList) => {
     if (Array.isArray(booksList)) {
@@ -54,16 +51,13 @@ const Home = ({ booksList, setBooksList, isPending, error }) => {
           .filter((book) => book.id === bookData.id)
           .map((book) => ({ ...book, shelf: shelf })),
       ]);
-      console.log("on shelf");
     });
   };
 
   useEffect(() => {
     if (!isPending && booksList?.length > 0) {
       const shelf = handleBooksShelfList(booksList);
-      console.log(shelf);
       if (Boolean(shelf)) {
-        console.log(" shelf useEffect");
         setBooksShelf(booksList, shelf);
       }
     }
