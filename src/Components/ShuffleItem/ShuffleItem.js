@@ -28,7 +28,7 @@ const ShuffleItem = ({ shuffleDataList, title, onShelf }) => {
                       name="shuffle-categories"
                       title={"shuffle-categories"}
                       onChange={(ev) => onShelf(book, ev.target.value)}
-                      value={book?.shelf}
+                      value={book.shelf ? book.shelf : "None"}
                     >
                       <option disabled={true}>add to </option>
                       <option value={"currentlyReading"}>
@@ -36,6 +36,7 @@ const ShuffleItem = ({ shuffleDataList, title, onShelf }) => {
                       </option>
                       <option value={"read"}>read</option>
                       <option value={"wantToRead"}>want To Read</option>
+                      <option value={"None"}>None</option>
                     </select>
                   </div>
                 </figure>

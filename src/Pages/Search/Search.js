@@ -16,39 +16,65 @@ const Search = ({ booksList, setBooksList }) => {
 
   const handleSearch = (ev) => {
     const value = ev.target.value;
-    setSearch(value);
+    setSearch(value.trim());
   };
 
-  const handlechangeShelf = (book, shelf) => {
-    const newBook = { ...book, shelf };
-    update(book, shelf).then(() => {
+  const handlechangeShelf = (myBook, shelf) => {
+    const newBook = { ...myBook, shelf };
+    update(myBook, shelf).then(() => {
       setBooksList((currentBooks) => [...currentBooks, newBook]);
+      setSearchResultList((prevBook) => [
+        ...prevBook.filter((books) => books.id !== myBook.id),
+        { ...myBook, shelf },
+      ]);
     });
-    console.log(shelf);
+  };
+
+  const handleEmptyQuery = (response) => {
+    if (response?.error) {
+      setBooksList([]);
+      setisError({
+        state: true,
+        message: "Oops ,There are no results identical to this research .",
+      });
+    } else {
+      setisError({
+        state: false,
+        message: "",
+      });
+    }
+    setIsPending(false);
+  };
+  const handleSearchResults = (response) => {
+    if (Array.isArray(response) && response?.error === undefined) {
+      setSearchResultList(response);
+      setIsPending(false);
+    }
+  };
+  const handleResponseError = (error) => {
+    setisError({
+      state: true,
+      message: error?.message,
+    });
+    setIsPending(false);
+  };
+  const handleSearchResponse = (response) => {
+    setIsPending(true);
+    handleEmptyQuery(response);
+    handleSearchResults(response);
   };
 
   useEffect(() => {
-    if (search !== "") {
-      apiSearch(search, 10)
-        .then((res) => {
-          setIsPending(true);
-          setisError({
-            state: false,
-            message: "",
-          });
-          if (Array.isArray(res)) {
-            setSearchResultList(res);
-          }
-        })
-        .catch((error) =>
-          setisError({
-            state: true,
-            message: error?.message,
-          })
-        )
-        .finally(() => setIsPending(false));
+    if (Boolean(search)) {
+      apiSearch(search, 12)
+        .then((response) => handleSearchResponse(response))
+        .catch((error) => handleResponseError(error));
     } else {
       setSearchResultList([]);
+      setisError({
+        state: false,
+        message: "",
+      });
     }
   }, [search]);
 
@@ -66,7 +92,7 @@ const Search = ({ booksList, setBooksList }) => {
         />
       </div>
       <section className="home-container">
-        {!isPending && (
+        {!isPending && !isError?.state && search.length > 0 && (
           <ul className="shuffles-list">
             <ShuffleItem
               onShelf={handlechangeShelf}
@@ -74,6 +100,11 @@ const Search = ({ booksList, setBooksList }) => {
               shuffleDataList={searchResultList}
             />
           </ul>
+        )}
+        {search.length <= 0 && (
+          <h3 style={{ marginInline: "auto", paddingBlock: "5rem" }}>
+            Write above to search for what you want
+          </h3>
         )}
         {isPending && (
           <h3 style={{ marginInline: "auto", paddingBlock: "5rem" }}>
