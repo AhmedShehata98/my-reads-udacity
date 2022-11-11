@@ -1,6 +1,7 @@
 import React from "react";
 import "./shuffleItem.css";
 import PropTypes from "prop-types";
+import { nanoid } from "nanoid";
 
 const ShuffleItem = ({ shuffleDataList, title, onShelf }) => {
   return (
@@ -13,7 +14,7 @@ const ShuffleItem = ({ shuffleDataList, title, onShelf }) => {
         {shuffleDataList?.length > 0 ? (
           shuffleDataList.map((book) => {
             return (
-              <li className="book-item" key={book?.id}>
+              <li className="book-item" key={nanoid(4)}>
                 <figure className="image-wrapper">
                   <img
                     src={book?.imageLinks?.smallThumbnail}

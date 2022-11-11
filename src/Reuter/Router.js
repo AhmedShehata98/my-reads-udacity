@@ -10,19 +10,21 @@ function Router() {
   const [booksList, setBooksList] = useState([]);
 
   useEffect(() => {
-    getAll()
-      .then((res) => {
-        setBooksList(res);
-        setError("");
-        setIsPending(false);
-      })
-      .catch((error) => {
-        setBooksList([]);
-        setError(error?.message);
-        setIsPending(false);
-      })
-      .finally(() => setIsPending(false));
-  }, []);
+    if (booksList.length <= 0) {
+      getAll()
+        .then((res) => {
+          setBooksList(res);
+          setError("");
+          setIsPending(false);
+        })
+        .catch((error) => {
+          setBooksList([]);
+          setError(error?.message);
+          setIsPending(false);
+        })
+        .finally(() => setIsPending(false));
+    }
+  }, [setBooksList]);
 
   return (
     <BrowserRouter>

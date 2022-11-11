@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useTransition, useState, useRef } from "react";
 import PropTypes from "prop-types";
 import ShuffleItem from "../../Components/ShuffleItem/ShuffleItem";
 import { search as apiSearch, update } from "../../BooksAPI";
@@ -6,33 +6,42 @@ import { Link } from "react-router-dom";
 import "./search.css";
 
 const Search = ({ booksList, setBooksList }) => {
-  const [isPending, setIsPending] = useState(false);
   const [isError, setisError] = useState({
     state: false,
     message: "",
   });
-  const [searchResultList, setSearchResultList] = useState([]);
   const [search, setSearch] = useState("");
-
+  const [isTransition, startTransition] = useTransition();
+  const [searchResultList, setSearchResultList] = useState([]);
+  const [resultItemsCount, setResultItemsCount] = useState("8");
   const handleSearch = (ev) => {
     const value = ev.target.value;
     setSearch(value.trim());
   };
 
+  const handleChangeCount = (ev) => {
+    const value = ev.target.value;
+    setResultItemsCount(value.toString());
+  };
   const handlechangeShelf = (myBook, shelf) => {
     const newBook = { ...myBook, shelf };
     update(myBook, shelf).then(() => {
-      setBooksList((currentBooks) => [...currentBooks, newBook]);
-      setSearchResultList((prevBook) => [
-        ...prevBook.filter((books) => books.id !== myBook.id),
-        { ...myBook, shelf },
-      ]);
+      startTransition(() => {
+        setSearchResultList((currentData) => [
+          ...currentData
+            .filter((book) => book.id === myBook.id)
+            .map((book) => ({ ...book, shelf })),
+          ...currentData.filter((book) => book.id !== myBook.id),
+        ]);
+
+        setBooksList((currentList) => [...currentList, newBook]);
+      });
     });
   };
 
   const handleEmptyQuery = (response) => {
     if (response?.error) {
-      setBooksList([]);
+      setSearchResultList([]);
       setisError({
         state: true,
         message: "Oops ,There are no results identical to this research .",
@@ -43,12 +52,10 @@ const Search = ({ booksList, setBooksList }) => {
         message: "",
       });
     }
-    setIsPending(false);
   };
   const handleSearchResults = (response) => {
     if (Array.isArray(response) && response?.error === undefined) {
       setSearchResultList(response);
-      setIsPending(false);
     }
   };
   const handleResponseError = (error) => {
@@ -56,17 +63,15 @@ const Search = ({ booksList, setBooksList }) => {
       state: true,
       message: error?.message,
     });
-    setIsPending(false);
   };
   const handleSearchResponse = (response) => {
-    setIsPending(true);
     handleEmptyQuery(response);
     handleSearchResults(response);
   };
 
   useEffect(() => {
     if (Boolean(search)) {
-      apiSearch(search, 12)
+      apiSearch(search, resultItemsCount)
         .then((response) => handleSearchResponse(response))
         .catch((error) => handleResponseError(error));
     } else {
@@ -90,9 +95,29 @@ const Search = ({ booksList, setBooksList }) => {
           onChange={(ev) => handleSearch(ev)}
           value={search}
         />
+        {isTransition && (
+          <span className="spinner-wrapper">
+            <span className="load-spinner"></span>
+          </span>
+        )}
+        <div className="items-count">
+          <h4>result count :</h4>
+          <select
+            defaultValue={resultItemsCount.toString()}
+            title="count-of-search-items"
+            onChange={(ev) => handleChangeCount(ev)}
+          >
+            <option value={"3"}>3 - items</option>
+            <option value={"6"}>6 - items</option>
+            <option value={"8"}>8 - items</option>
+            <option value={"12"}>12 - items</option>
+            <option value={"18"}>18 - items</option>
+            <option value={"25"}>25 - items</option>
+          </select>
+        </div>
       </div>
       <section className="home-container">
-        {!isPending && !isError?.state && search.length > 0 && (
+        {!isError?.state && search.length > 0 && (
           <ul className="shuffles-list">
             <ShuffleItem
               onShelf={handlechangeShelf}
@@ -106,12 +131,7 @@ const Search = ({ booksList, setBooksList }) => {
             Write above to search for what you want
           </h3>
         )}
-        {isPending && (
-          <h3 style={{ marginInline: "auto", paddingBlock: "5rem" }}>
-            loading ...
-          </h3>
-        )}
-        {!isPending && isError?.state && (
+        {!isTransition && isError?.state && (
           <h3 style={{ marginInline: "auto", paddingBlock: "5rem" }}>
             {isError?.message}
           </h3>
