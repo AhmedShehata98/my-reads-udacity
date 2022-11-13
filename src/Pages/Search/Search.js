@@ -1,87 +1,119 @@
 import { useEffect, useTransition, useState, useRef } from "react";
-import PropTypes from "prop-types";
+import PropTypes, { object } from "prop-types";
 import ShuffleItem from "../../Components/ShuffleItem/ShuffleItem";
 import { search as apiSearch, update } from "../../BooksAPI";
 import { Link } from "react-router-dom";
 import "./search.css";
 
-const Search = ({ booksList, setBooksList }) => {
+const Search = ({ booksList, setBooksList, choosedBooksRef }) => {
   const [isError, setisError] = useState({
     state: false,
     message: "",
   });
-  const [search, setSearch] = useState("");
+  const [query, setQuery] = useState("");
+  const [searchBooksList, setSearchBooksList] = useState([]);
   const [isTransition, startTransition] = useTransition();
-  const [searchResultList, setSearchResultList] = useState([]);
-  const [resultItemsCount, setResultItemsCount] = useState("8");
-  const handleSearch = (ev) => {
+  const errorCases = {
+    API_ERROR_EMPTY_QUERY: "api-empty-query",
+    EMPTY_SEARCH_INPUT: "empty-search-input",
+    NETWORK_ERROR: "network-error",
+  };
+  const handleSearchQuery = (ev) => {
     const value = ev.target.value;
-    setSearch(value.trim());
+    setQuery(value);
   };
 
-  const handleChangeCount = (ev) => {
-    const value = ev.target.value;
-    setResultItemsCount(value.toString());
-  };
-  const handlechangeShelf = (myBook, shelf) => {
-    const newBook = { ...myBook, shelf };
-    update(myBook, shelf).then(() => {
-      startTransition(() => {
-        setSearchResultList((currentData) => [
-          ...currentData
-            .filter((book) => book.id === myBook.id)
-            .map((book) => ({ ...book, shelf })),
-          ...currentData.filter((book) => book.id !== myBook.id),
-        ]);
-
-        setBooksList((currentList) => [...currentList, newBook]);
-      });
-    });
-  };
-
-  const handleEmptyQuery = (response) => {
-    if (response?.error) {
-      setSearchResultList([]);
-      setisError({
-        state: true,
-        message: "Oops ,There are no results identical to this research .",
-      });
-    } else {
+  const handleSearchResponses = (response) => {
+    if (Array.isArray(response) && response?.length >= 1) {
       setisError({
         state: false,
         message: "",
       });
+      handleSuccessSearch(response);
+    }
+    if (response?.error) {
+      handleEmptyQuery(response);
     }
   };
-  const handleSearchResults = (response) => {
-    if (Array.isArray(response) && response?.error === undefined) {
-      setSearchResultList(response);
-    }
-  };
-  const handleResponseError = (error) => {
+  function handleSuccessSearch(respone = []) {
+    const newResponse = [];
+    startTransition(() => {
+      const oldBooks = findAllOldBooks(booksList, respone);
+      const newBooks = responseWithoutOldBooks(oldBooks, respone);
+
+      newResponse.push(...oldBooks, ...newBooks);
+    });
+    setSearchBooksList(newResponse);
+  }
+  function findAllOldBooks(booksList = [], respone = []) {
+    const responeID = respone.map((book) => book.id);
+    return booksList.filter((book) => responeID.indexOf(book.id) !== -1);
+  }
+  function responseWithoutOldBooks(oldBooks = [], respone = []) {
+    let oldBooksID = oldBooks.map((oldBook) => oldBook.id);
+    return respone.filter((res) => oldBooksID.indexOf(res.id) === -1);
+  }
+  function handleEmptyQuery() {
     setisError({
-      state: true,
+      state: errorCases.API_ERROR_EMPTY_QUERY,
+      message: "there is no result equal to your search.",
+    });
+  }
+  const handleSearchErrors = (error) => {
+    setisError({
+      state: errorCases.NETWORK_ERROR,
       message: error?.message,
     });
   };
-  const handleSearchResponse = (response) => {
-    handleEmptyQuery(response);
-    handleSearchResults(response);
+
+  const handlechangeShelf = (book, shelf) => {
+    const shelfedBook = { ...book, shelf };
+    update(book, shelf).then((response) => {
+      if (booksList.find((oldBook) => oldBook.id === book.id) === undefined) {
+        setBooksList((currentBooks) => [...currentBooks, shelfedBook]);
+        setSearchBooksList((currentBooks) => [
+          shelfedBook,
+          ...currentBooks.filter((cBook) => cBook.id !== book.id),
+        ]);
+      } else {
+        setBooksList((currentBooks) =>
+          updateCurrentBookShelf(currentBooks, shelfedBook)
+        );
+        setSearchBooksList((currentBooks) =>
+          updateCurrentBookShelf(currentBooks, shelfedBook)
+        );
+      }
+    });
   };
 
+  function updateCurrentBookShelf(currentBooks = [], shelfedBook) {
+    const cloneCurrentBooks = JSON.stringify(currentBooks);
+    const filteredBooks = JSON.parse(cloneCurrentBooks).filter(
+      (currBook) => currBook.id !== shelfedBook.id
+    );
+    const newBooksList = [shelfedBook, ...filteredBooks];
+    return newBooksList;
+  }
+
   useEffect(() => {
-    if (Boolean(search)) {
-      apiSearch(search, resultItemsCount)
-        .then((response) => handleSearchResponse(response))
-        .catch((error) => handleResponseError(error));
+    let timeout;
+    if (query !== "") {
+      timeout = setTimeout(() => {
+        apiSearch(query, 5)
+          .then((respone) => handleSearchResponses(respone))
+          .catch((error) => handleSearchErrors(error));
+      }, 250);
     } else {
-      setSearchResultList([]);
+      setSearchBooksList([]);
       setisError({
-        state: false,
-        message: "",
+        state: errorCases.EMPTY_SEARCH_INPUT,
+        message: "Write above to search for what you want",
       });
     }
-  }, [search]);
+    return () => {
+      clearTimeout(timeout);
+    };
+  }, [query]);
 
   return (
     <main className="search-main">
@@ -92,46 +124,36 @@ const Search = ({ booksList, setBooksList }) => {
         <input
           type={"search"}
           placeholder={"search in books ..."}
-          onChange={(ev) => handleSearch(ev)}
-          value={search}
+          onChange={(ev) => handleSearchQuery(ev)}
+          value={query}
         />
         {isTransition && (
           <span className="spinner-wrapper">
             <span className="load-spinner"></span>
           </span>
         )}
-        <div className="items-count">
-          <h4>result count :</h4>
-          <select
-            defaultValue={resultItemsCount.toString()}
-            title="count-of-search-items"
-            onChange={(ev) => handleChangeCount(ev)}
-          >
-            <option value={"3"}>3 - items</option>
-            <option value={"6"}>6 - items</option>
-            <option value={"8"}>8 - items</option>
-            <option value={"12"}>12 - items</option>
-            <option value={"18"}>18 - items</option>
-            <option value={"25"}>25 - items</option>
-          </select>
-        </div>
       </div>
       <section className="home-container">
-        {!isError?.state && search.length > 0 && (
+        {isError?.state === false && query.length > 0 && (
           <ul className="shuffles-list">
             <ShuffleItem
               onShelf={handlechangeShelf}
               title="search result"
-              shuffleDataList={searchResultList}
+              shuffleDataList={searchBooksList}
             />
           </ul>
         )}
-        {search.length <= 0 && (
+        {isError?.state === errorCases?.EMPTY_SEARCH_INPUT && (
           <h3 style={{ marginInline: "auto", paddingBlock: "5rem" }}>
-            Write above to search for what you want
+            {isError?.message}
           </h3>
         )}
-        {!isTransition && isError?.state && (
+        {isError?.state === errorCases?.API_ERROR_EMPTY_QUERY && (
+          <h3 style={{ marginInline: "auto", paddingBlock: "5rem" }}>
+            {isError?.message}
+          </h3>
+        )}
+        {isError?.state === errorCases?.NETWORK_ERROR && (
           <h3 style={{ marginInline: "auto", paddingBlock: "5rem" }}>
             {isError?.message}
           </h3>
@@ -144,5 +166,6 @@ const Search = ({ booksList, setBooksList }) => {
 Search.propTypes = {
   booksList: PropTypes.array.isRequired,
   setBooksList: PropTypes.func.isRequired,
+  choosedBooksRef: PropTypes.array.isRequired,
 };
 export default Search;

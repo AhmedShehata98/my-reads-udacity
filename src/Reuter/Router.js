@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { getAll } from "../BooksAPI";
 import Home from "../Pages/Home/Home";
@@ -8,6 +8,7 @@ function Router() {
   const [isPending, setIsPending] = useState(true);
   const [error, setError] = useState("");
   const [booksList, setBooksList] = useState([]);
+  const choosedBooksRef = useRef([]);
 
   useEffect(() => {
     if (booksList.length <= 0) {
@@ -44,7 +45,11 @@ function Router() {
           <Route
             path="search"
             element={
-              <Search booksList={booksList} setBooksList={setBooksList} />
+              <Search
+                booksList={booksList}
+                setBooksList={setBooksList}
+                choosedBooksRef={choosedBooksRef.current}
+              />
             }
           />
         </Route>
