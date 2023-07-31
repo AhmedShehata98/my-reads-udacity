@@ -29,7 +29,7 @@ it is project to preview the book in 3 splitting categories : ( currentlyReading
 - install application needed node modules
 
 ```
- npm run install
+ npm install
 ```
 
 - start local development server
